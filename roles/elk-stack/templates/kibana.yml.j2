@@ -1,0 +1,24 @@
+# Kibana configuration
+
+# Server
+server.port: {{ kibana_port }}
+server.host: "{{ network_host }}"
+
+# Elasticsearch
+elasticsearch.hosts: {{ kibana_elasticsearch_hosts | to_json }}
+{% if elastic_security_enabled %}
+elasticsearch.username: "{{ kibana_elasticsearch_username }}"
+elasticsearch.password: "{{ kibana_elasticsearch_password }}"
+{% endif %}
+
+# Paths
+server.basePath: ""
+
+# Security
+{% if elk_ssl_enabled %}
+server.ssl.enabled: true
+server.ssl.certificate: "{{ ssl_cert_path }}/kibana.crt"
+server.ssl.key: "{{ ssl_cert_path }}/kibana.key"
+elasticsearch.ssl.certificateAuthorities: [ "{{ ssl_cert_path }}/ca.crt" ]
+elasticsearch.ssl.verificationMode: certificate
+{% endif %}

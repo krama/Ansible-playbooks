@@ -1,0 +1,39 @@
+input {
+  beats {
+    port => 5044
+  }
+
+  tcp {
+    port => 5000
+    codec => json
+  }
+
+  udp {
+    port => 5000
+    codec => json
+  }
+}
+
+filter {
+  if [type] == "syslog" {
+    grok {
+      match => { "message" => "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\\[%{POSINT:syslog_pid}\\])?: %{GREEDYDATA:syslog_message}" }
+      add_field => [ "received_at", "%{@timestamp}" ]
+    }
+    syslog_pri { }
+    date {
+      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+    }
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["http://localhost:{{ elasticsearch_http_port }}"]
+    index => "%{[@metadata][beat]}-%{[@metadata][version]}-%{+YYYY.MM.dd}"
+    {% if elastic_security_enabled %}
+    user => "elastic"
+    password => "{{ logstash_system_password | default('changeme') }}"
+    {% endif %}
+  }
+}

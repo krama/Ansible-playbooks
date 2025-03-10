@@ -1,0 +1,11 @@
+---
+# Variables specific to different operating systems can be added here
+# These variables will override the default ones if included
+
+# Debian specific variables
+debian_elasticsearch_apt_repo: "deb https://artifacts.elastic.co/packages/8.x/apt stable main"
+debian_elasticsearch_apt_key: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+
+# RedHat specific variables
+redhat_elasticsearch_repo_url: "https://artifacts.elastic.co/packages/8.x/yum"
+redhat_elasticsearch_gpg_key: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"

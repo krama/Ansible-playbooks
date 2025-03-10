@@ -1,0 +1,135 @@
+---
+
+- name: Deploy ELK Stack
+  hosts: elk_servers
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Update apt cache (Debian/Ubuntu)
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+      tags: always
+
+    - name: Update yum cache (RedHat)
+      yum:
+        update_cache: yes
+      when: ansible_os_family == "RedHat"
+      tags: always
+
+    - name: Ensure required directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ elasticsearch_data_dir | default('/var/lib/elasticsearch') }}"
+        - "{{ elasticsearch_log_dir | default('/var/log/elasticsearch') }}"
+        - "{{ logstash_data_dir | default('/var/lib/logstash') }}"
+        - "{{ logstash_log_dir | default('/var/log/logstash') }}"
+      tags: prepare
+
+  roles:
+    - role: elk-stack
+      tags: elk
+
+  tasks:
+    - name: Confirm Elasticsearch installation
+      service:
+        name: elasticsearch
+        state: started
+        enabled: yes
+      register: elasticsearch_service
+      tags: verify
+
+    - name: Confirm Kibana installation
+      service:
+        name: kibana
+        state: started
+        enabled: yes
+      register: kibana_service
+      tags: verify
+
+    - name: Confirm Logstash installation
+      service:
+        name: logstash
+        state: started
+        enabled: yes
+      register: logstash_service
+      tags: verify
+
+  post_tasks:
+    - name: Check if Elasticsearch is running
+      uri:
+        url: "http://localhost:{{ elasticsearch_http_port | default(9200) }}"
+        method: GET
+        return_content: yes
+        status_code: 200
+      register: elasticsearch_status
+      ignore_errors: yes
+      no_log: yes
+      tags: verify
+
+    - name: Display Elasticsearch status
+      debug:
+        msg: "Elasticsearch is {{ 'running' if elasticsearch_status.status is defined and elasticsearch_status.status == 200 else 'not running' }}"
+      when: elasticsearch_status is defined
+      tags: verify
+
+    - name: Check if Kibana is running
+      uri:
+        url: "http://localhost:{{ kibana_port | default(5601) }}/api/status"
+        method: GET
+        return_content: yes
+        status_code: 200
+      register: kibana_status
+      ignore_errors: yes
+      no_log: yes
+      tags: verify
+
+    - name: Display Kibana status
+      debug:
+        msg: "Kibana is {{ 'running' if kibana_status.status is defined and kibana_status.status == 200 else 'not running' }}"
+      when: kibana_status is defined
+      tags: verify
+
+    - name: Check if Logstash is running
+      uri:
+        url: "http://localhost:{{ logstash_http_port | default(9600) }}/_node/stats"
+        method: GET
+        return_content: yes
+        status_code: 200
+      register: logstash_status
+      ignore_errors: yes
+      no_log: yes
+      tags: verify
+
+    - name: Display Logstash status
+      debug:
+        msg: "Logstash is {{ 'running' if logstash_status.status is defined and logstash_status.status == 200 else 'not running' }}"
+      when: logstash_status is defined
+      tags: verify
+
+    - name: Display ELK access information
+      debug:
+        msg: 
+          - "ELK Stack deployed successfully!"
+          - "Elasticsearch: http://{{ inventory_hostname }}:{{ elasticsearch_http_port | default(9200) }}"
+          - "Kibana: http://{{ inventory_hostname }}:{{ kibana_port | default(5601) }}"
+          - "Logstash API: http://{{ inventory_hostname }}:{{ logstash_http_port | default(9600) }}"
+      when: elasticsearch_status.status is defined and elasticsearch_status.status == 200
+      tags: verify
+
+    - name: Provide hints for troubleshooting
+      debug:
+        msg:
+          - "For troubleshooting, check the following logs:"
+          - "Elasticsearch: {{ elasticsearch_log_dir | default('/var/log/elasticsearch') }}/{{ elasticsearch_cluster_name | default('elk-cluster') }}.log"
+          - "Kibana: /var/log/kibana/kibana.log"
+          - "Logstash: {{ logstash_log_dir | default('/var/log/logstash') }}/logstash-plain.log"
+      when: elasticsearch_status.status is not defined or elasticsearch_status.status != 200 or
+            kibana_status.status is not defined or kibana_status.status != 200 or
+            logstash_status.status is not defined or logstash_status.status != 200
+      tags: verify

@@ -1,0 +1,38 @@
+---
+- name: Install Kibana
+  package:
+    name: "kibana={{ kibana_version }}"
+    state: present
+  register: kibana_install
+  notify: restart kibana
+
+- name: Create Kibana configuration directory
+  file:
+    path: /etc/kibana
+    state: directory
+    owner: "{{ elk_user }}"
+    group: "{{ elk_group }}"
+    mode: '0750'
+
+- name: Configure Kibana
+  template:
+    src: kibana.yml.j2
+    dest: /etc/kibana/kibana.yml
+    owner: "{{ elk_user }}"
+    group: "{{ elk_group }}"
+    mode: '0644'
+  notify: restart kibana
+
+- name: Start Kibana service
+  service:
+    name: kibana
+    state: started
+    enabled: yes
+
+- name: Wait for Kibana to start
+  wait_for:
+    host: localhost
+    port: "{{ kibana_port }}"
+    delay: 30
+    timeout: 300
+  register: kibana_started

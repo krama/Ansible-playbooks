@@ -1,0 +1,78 @@
+---
+- name: Include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family | lower }}.yml"
+    - "main.yml"
+
+- name: Create elk user and group
+  block:
+    - name: Create elk group
+      group:
+        name: "{{ elk_group }}"
+        state: present
+
+    - name: Create elk user
+      user:
+        name: "{{ elk_user }}"
+        group: "{{ elk_group }}"
+        create_home: yes
+        shell: /bin/bash
+        state: present
+
+- name: Install required dependencies (Debian)
+  package:
+    name:
+      - apt-transport-https
+      - gnupg2
+      - curl
+      - wget
+      - software-properties-common
+      - python3-pip
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Install required dependencies (RedHat)
+  package:
+    name:
+      - yum-utils
+      - curl
+      - wget
+      - gnupg2
+      - python3-pip
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Install Java
+  include_tasks: java.yml
+
+- name: Set system limits for Elasticsearch
+  pam_limits:
+    domain: "{{ elk_user }}"
+    limit_type: "{{ item.limit_type }}"
+    limit_item: "{{ item.limit_item }}"
+    value: "{{ item.value }}"
+  loop:
+    - { limit_type: '-', limit_item: 'nofile', value: '65535' }
+    - { limit_type: '-', limit_item: 'nproc', value: '4096' }
+    - { limit_type: '-', limit_item: 'memlock', value: 'unlimited' }
+
+- name: Configure sysctl for Elasticsearch
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { name: 'vm.max_map_count', value: '262144' }
+    - { name: 'fs.file-max', value: '65536' }
+
+- name: Install Elasticsearch
+  include_tasks: elasticsearch.yml
+
+- name: Install Kibana
+  include_tasks: kibana.yml
+
+- name: Install Logstash
+  include_tasks: logstash.yml

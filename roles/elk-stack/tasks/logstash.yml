@@ -1,0 +1,60 @@
+---
+- name: Install Logstash
+  package:
+    name: "logstash={{ logstash_version }}"
+    state: present
+  register: logstash_install
+  notify: restart logstash
+
+- name: Create Logstash configuration directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ elk_user }}"
+    group: "{{ elk_group }}"
+    mode: '0750'
+  loop:
+    - "{{ logstash_data_dir }}"
+    - "{{ logstash_log_dir }}"
+    - "/etc/logstash/conf.d"
+
+- name: Configure Logstash settings
+  template:
+    src: logstash.yml.j2
+    dest: /etc/logstash/logstash.yml
+    owner: "{{ elk_user }}"
+    group: "{{ elk_group }}"
+    mode: '0644'
+  notify: restart logstash
+
+- name: Configure JVM options for Logstash
+  template:
+    src: jvm.options.j2
+    dest: /etc/logstash/jvm.options
+    owner: "{{ elk_user }}"
+    group: "{{ elk_group }}"
+    mode: '0644'
+  notify: restart logstash
+
+- name: Configure Logstash pipeline
+  template:
+    src: logstash.conf.j2
+    dest: /etc/logstash/conf.d/01-basic.conf
+    owner: "{{ elk_user }}"
+    group: "{{ elk_group }}"
+    mode: '0644'
+  notify: restart logstash
+
+- name: Start Logstash service
+  service:
+    name: logstash
+    state: started
+    enabled: yes
+
+- name: Wait for Logstash to start
+  wait_for:
+    host: localhost
+    port: "{{ logstash_http_port }}"
+    delay: 30
+    timeout: 300
+  register: logstash_started

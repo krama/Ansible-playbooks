@@ -1,0 +1,26 @@
+---
+# Logstash configuration
+
+# Node settings
+node.name: logstash-node
+
+# Paths
+path.data: "{{ logstash_data_dir }}"
+path.logs: "{{ logstash_log_dir }}"
+
+# Pipeline settings
+pipeline.workers: {{ logstash_pipeline_workers }}
+pipeline.batch.size: 125
+pipeline.batch.delay: 50
+
+# API endpoint
+http.host: "{{ network_host }}"
+http.port: {{ logstash_http_port }}
+
+# Elasticsearch output
+xpack.monitoring.enabled: true
+xpack.monitoring.elasticsearch.hosts: ["http://localhost:{{ elasticsearch_http_port }}"]
+{% if elastic_security_enabled %}
+xpack.monitoring.elasticsearch.username: "logstash_system"
+xpack.monitoring.elasticsearch.password: "{{ logstash_system_password | default('changeme') }}"
+{% endif %}

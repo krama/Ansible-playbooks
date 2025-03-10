@@ -1,0 +1,26 @@
+
+# Версии компонентов
+elasticsearch_version: "8.11.0"
+kibana_version: "8.11.0"
+logstash_version: "8.11.0"
+
+# Настройки кластера Elasticsearch
+elasticsearch_cluster_name: "production-elk"
+elasticsearch_node_name: "node-{{ inventory_hostname }}"
+elasticsearch_heap_size: "2g"
+
+# Настройки Kibana
+kibana_elasticsearch_hosts: ["http://localhost:9200"]
+kibana_elasticsearch_username: "kibana_system"
+kibana_elasticsearch_password: "your_secure_password_here"
+
+# Настройки Logstash
+logstash_heap_size: "1g"
+logstash_pipeline_workers: 2
+
+# Сетевые настройки
+network_host: "0.0.0.0"
+
+# Настройки безопасности
+elastic_security_enabled: true
+elk_ssl_enabled: false

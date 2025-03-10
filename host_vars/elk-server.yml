@@ -1,0 +1,15 @@
+
+# Настройки системы
+elasticsearch_data_dir: "/data/elasticsearch"
+elasticsearch_log_dir: "/var/log/elasticsearch"
+logstash_data_dir: "/data/logstash"
+logstash_log_dir: "/var/log/logstash"
+
+# Ресурсы сервера
+elasticsearch_heap_size: "4g"
+logstash_heap_size: "2g"
+
+# Настройки портов (если вам нужны нестандартные порты)
+# elasticsearch_http_port: 9200
+# kibana_port: 5601
+# logstash_http_port: 9600
