@@ -1,0 +1,4 @@
+# .sops.yaml
+creation_rules:
+  - path_regex: \.sops\.ya?ml$
+    pgp: 'YOUR_PGP_KEY_FINGERPRINT'  # Замените на ваш PGP ключ

@@ -22,5 +22,5 @@ xpack.monitoring.enabled: true
 xpack.monitoring.elasticsearch.hosts: ["http://localhost:{{ elasticsearch_http_port }}"]
 {% if elastic_security_enabled %}
 xpack.monitoring.elasticsearch.username: "logstash_system"
-xpack.monitoring.elasticsearch.password: "{{ logstash_system_password | default('changeme') }}"
+xpack.monitoring.elasticsearch.password: "{{ logstash_system_password }}"
 {% endif %}
